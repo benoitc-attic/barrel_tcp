@@ -1,0 +1,14 @@
+barrel
+------
+
+2013 (c) Benoît Chesneau <benoitc@e-engura.org>
+
+barrel is released under the MIT license. See the LICENSE
+file for the complete license.
+
+
+Third parties
+-------------
+
+*) barrel_tcp, barrel_ssl under ISC license:
+Copyright (c) 2011-2012, Loïc Hoguin <essen@ninenines.eu>
