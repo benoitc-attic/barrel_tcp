@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    barrel:start_listener(http, 100, barrel_tcp,
+    barrel:start_listener(echo, 100, barrel_tcp,
                           [{port, 10001}], echo_handler, []),
     echo_sup:start_link().
 

@@ -23,6 +23,7 @@
 -record(state, {socket,
                 transport,
                 transport_opts,
+                nb_acceptors,
                 acceptors,
                 open_reqs,
                 listener_opts,
@@ -92,6 +93,7 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
                 transport = Transport,
                 transport_opts = TransOpts,
                 acceptors = Acceptors,
+                nb_acceptors = NbAcceptors,
                 open_reqs = 0,
                 listener_opts = ListenerOpts,
                 protocol = {Protocol, ProtoOpts}}}.
@@ -140,7 +142,14 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 %% internals
-
+remove_acceptor(#state{acceptors=Acceptors, nb_acceptors=N}=State, Pid)
+        when length(Acceptors) < N->
+    NewPid = barrel_acceptor:start_link(self(), State#state.transport,
+                                        State#state.socket,
+                                        State#state.listener_opts,
+                                        State#state.protocol),
+    Acceptors1 = [NewPid | lists:delete(Pid, Acceptors)],
+    State#state{acceptors = Acceptors1};
 remove_acceptor(State, Pid) ->
     State#state{acceptors = lists:delete(Pid, State#state.acceptors),
                 open_reqs = State#state.open_reqs - 1}.
