@@ -14,6 +14,12 @@
 
 barrel is a generic TCP acceptor pool with low latency in Erlang.
 
+>> The design of barrel differs from
+>> [ranch](http://github.com/extend/ranch). Instead of spawning w new
+>> process once a connectino and passing the control of the socket to it
+>> which can be slow, Barrel ois only spawning a new acceptors. The
+>> accepted socket will continue to be used in the same process that
+>> accepted it before.
 
 ## Usage
 
