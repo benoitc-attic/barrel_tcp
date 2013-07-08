@@ -13,6 +13,6 @@ examples/*.beam
 .eunit/*
 log
 
-examples/proxy_openbsd/log
-examples/proxy_openbsd/deps
-examples/proxy_openbsd/ebim
+examples/echo/log
+examples/echo/deps
+examples/echo/ebin
