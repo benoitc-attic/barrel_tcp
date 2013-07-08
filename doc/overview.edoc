@@ -8,7 +8,9 @@
 @version 1.0
 @title barrel - generic TCP acceptor pool
 
-@doc# barrel
+@doc
+
+# barrel
 
 barrel is a generic TCP acceptor pool with low latency in Erlang.
 
