@@ -1,2 +1,2 @@
 #!/bin/sh
-erl -pa ebin deps/*/ebin -s echo 
+erl -Ww -pa ebin deps/*/ebin -s echo 

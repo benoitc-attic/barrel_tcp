@@ -128,14 +128,15 @@ handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs}=State) ->
     {noreply, State#state{reqs=gb_trees:delete_any(Pid, Reqs)}};
 
 handle_info({'EXIT', _Pid, {error, emfile}}, State) ->
-    lager:error("No more file descriptors, shutting down~n", []),
+    error_logger:error_msg("No more file descriptors, shutting down:
+                           ~p~n", [?MODULE]),
     {stop, emfile, State};
 
 handle_info({'EXIT', Pid, normal}, State) ->
     {noreply, remove_acceptor(State, Pid)};
 
 handle_info({'EXIT', Pid, Reason}, State) ->
-    lager:error("request (pid ~p) unexpectedly crashed:~n~p~n",
+    error_logger:info_msg("request (pid ~p) unexpectedly crashed:~n~p~n",
                 [Pid, Reason]),
     {noreply, remove_acceptor(State, Pid)}.
 

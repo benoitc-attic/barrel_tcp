@@ -37,7 +37,6 @@ listen(Port, Opts) ->
                 {nodelay, true}],
     Opts1 = barrel_util:filter_props(Opts, [backlog, ip, nodelay, port,
                                             raw], BaseOpts),
-    lager:info("opts ~p~n", [barrel_util:fix_ip(Opts1)]),
     gen_tcp:listen(Port, barrel_util:fix_ip(Opts1)).
 
 %% @doc Accept connections with the given listening socket.
