@@ -32,7 +32,7 @@ Create a simple TCP echo server.
 
     -export([init/3]).
 
-    init(Transport, Socket, _Opts) ->
+    init(_ListenerRef, Transport, Socket, _Opts) ->
         wait_request(Transport, Socket).
 
     wait_request(Transport, Socket) ->

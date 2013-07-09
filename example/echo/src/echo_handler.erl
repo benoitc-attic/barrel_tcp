@@ -1,8 +1,8 @@
 -module(echo_handler).
 
--export([init/3]).
+-export([init/4]).
 
-init(Transport, Socket, _Opts) ->
+init(_Ref, Transport, Socket, _Opts) ->
     wait_request(Transport, Socket).
 
 wait_request(Transport, Socket) ->
