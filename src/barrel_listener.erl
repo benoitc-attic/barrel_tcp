@@ -8,7 +8,8 @@
 
 -export([get_port/1,
          info/1, info/2,
-         set_max_clients/2, get_max_clients/1]).
+         set_max_clients/2, get_max_clients/1,
+         set_nb_acceptors/2, get_nb_acceptors/1]).
 
 
 %% internal API
@@ -49,6 +50,15 @@ set_max_clients(Ref, Nb) ->
 get_max_clients(Ref) ->
     [{max_clients, Max}] = info(Ref, [max_connection]),
     Max.
+
+set_nb_acceptors(Ref, Nb) ->
+    gen_server:call(Ref, {set_nb_acceptors, Nb}).
+
+get_nb_acceptors(Ref) ->
+    [{nb_acceptors, Nb}] = info(Ref, [nb_acceptors]),
+    Nb.
+
+
 
 start_accepting(Ref) ->
     gen_server:call(Ref, start_accepting, infinity).
@@ -103,6 +113,12 @@ handle_call({info, Keys}, _From, State) ->
 
 handle_call({set_max_clients, Nb}, _From, State) ->
     {reply, ok, State#state{max_clients=Nb}};
+
+handle_call({set_nb_acceptors, Nb}, _From,  State) ->
+
+    NewState = manage_acceptors(State#state{nb_acceptors=Nb}),
+
+    {reply, ok, NewState};
 
 handle_call(start_accepting, From, #state{open_reqs=NbReqs,
                                           max_clients=Max,
@@ -206,6 +222,33 @@ start_new_acceptor(State) ->
                                      State#state.protocol),
 
     State#state{acceptors = [Pid | State#state.acceptors]}.
+
+manage_acceptors(#state{nb_acceptors=N, acceptors=Acceptors}=State) ->
+    AcceptorsLen = length(Acceptors),
+    if N > AcceptorsLen ->
+            NewAcceptors = spawn_acceptors(N - AcceptorsLen, State),
+            State#state{acceptors=Acceptors ++ NewAcceptors};
+        true ->
+            NewAcceptors = murder_acceptors(lists:reverse(Acceptors),
+                                            AcceptorsLen - N),
+            State#state{acceptors=NewAcceptors}
+    end.
+
+spawn_acceptors(Nb, State) ->
+    [barrel_acceptor:start_link(self(), State#state.transport,
+                                State#state.socket,
+                                State#state.listener_opts,
+                                State#state.protocol)
+     || _ <- lists:seq(1, Nb)].
+
+
+murder_acceptors(Acceptors, 0) ->
+    lists:reverse(Acceptors);
+murder_acceptors([], _N) ->
+    [];
+murder_acceptors([Pid | Rest], N) ->
+    exit(Pid, normal),
+    murder_acceptors(Rest, N-1).
 
 get_infos(Keys, #state{transport=Transport, socket=Socket}=State) ->
     IpPort = case Transport:sockname(Socket) of

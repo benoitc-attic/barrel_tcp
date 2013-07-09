@@ -11,7 +11,8 @@
          child_spec/2,
          get_port/1,
          info/1, info/2,
-         set_max_clients/2, get_max_clients/1]).
+         set_max_clients/2, get_max_clients/1,
+         set_nb_acceptors/2, get_nb_acceptors/1]).
 
 -export([accept_ack/1]).
 
@@ -89,7 +90,14 @@ get_max_clients(Ref) ->
     ListenerPid = barrel_server:get_listener(Ref),
     barrel_listener:get_max_clients(ListenerPid).
 
+set_nb_acceptors(Ref, Nb) ->
+    ListenerPid = barrel_server:get_listener(Ref),
+    barrel_listener:set_nb_acceptors(ListenerPid, Nb).
+
+get_nb_acceptors(Ref) ->
+    ListenerPid = barrel_server:get_listener(Ref),
+    barrel_listener:get_nb_acceptors(ListenerPid).
+
 
 accept_ack(Ref) ->
     receive {accept_ack, Ref} -> ok end.
-
