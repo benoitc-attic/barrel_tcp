@@ -10,7 +10,8 @@
          stop_listener/1,
          child_spec/2,
          get_port/1,
-         info/1, info/2]).
+         info/1, info/2,
+         set_max_clients/2, get_max_clients/1]).
 
 -type ref() :: any().
 -export_type([ref/0]).
@@ -77,4 +78,12 @@ info(Ref) ->
 info(Ref, Key) ->
     ListenerPid = barrel_server:get_listener(Ref),
     barrel_listener:info(ListenerPid, Key).
+
+set_max_clients(Ref, MaxClients) ->
+    ListenerPid = barrel_server:get_listener(Ref),
+    barrel_listener:set_max_clients(ListenerPid, MaxClients).
+
+get_max_clients(Ref) ->
+    ListenerPid = barrel_server:get_listener(Ref),
+    barrel_listener:get_max_clients(ListenerPid).
 

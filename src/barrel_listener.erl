@@ -7,10 +7,13 @@
 -behaviour(gen_server).
 
 -export([get_port/1,
-         info/1, info/2]).
+         info/1, info/2,
+         set_max_clients/2, get_max_clients/1]).
 
 
+%% internal API
 -export([start_link/1]).
+-export([start_accepting/1]).
 
 
 %% gen_server callbacks
@@ -24,7 +27,9 @@
                 nb_acceptors,
                 acceptors = [],
                 reqs,
-                open_reqs,
+                open_reqs = 0,
+                max_clients=300000,
+                sleepers=[],
                 listener_opts,
                 protocol}).
 
@@ -33,11 +38,20 @@ get_port(Ref) ->
     gen_server:call(Ref, get_port).
 
 info(Ref) ->
-    info(Ref, [ip, port, open_reqs, nb_acceptors]).
+    info(Ref, [ip, port, open_reqs, nb_acceptors, max_clients]).
 
 info(Ref, Keys) ->
     gen_server:call(Ref, {info, Keys}).
 
+set_max_clients(Ref, Nb) ->
+    gen_server:call(Ref, {set_max_clients, Nb}).
+
+get_max_clients(Ref) ->
+    [{max_clients, Max}] = info(Ref, [max_connection]),
+    Max.
+
+start_accepting(Ref) ->
+    gen_server:call(Ref, start_accepting, infinity).
 
 start_link([_, _, _, _, _, ListenerOpts] = Options) ->
     Ref = proplists:get_value(ref, ListenerOpts),
@@ -68,6 +82,8 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
                 nb_acceptors = NbAcceptors,
                 reqs = gb_trees:empty(),
                 open_reqs = 0,
+                max_clients = 300000,
+                sleepers = [],
                 listener_opts = ListenerOpts,
                 protocol = {Protocol, ProtoOpts}}}.
 
@@ -84,6 +100,17 @@ handle_call({info, Keys}, _From, State) ->
     Infos = get_infos(Keys, State),
     {reply, Infos, State};
 
+handle_call({set_max_clients, Nb}, _From, State) ->
+    {reply, ok, State#state{max_clients=Nb}};
+
+handle_call(start_accepting, From, #state{open_reqs=NbReqs,
+                                          max_clients=Max,
+                                          sleepers=Sleepers}=State)
+       when NbReqs =:= Max ->
+    {no_reply, State#state{sleepers=[From, Sleepers]}};
+handle_call(start_accepting, _From, State) ->
+    {reply, ok, State};
+
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
 
@@ -95,8 +122,17 @@ handle_cast({accepted, Pid}, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs}=State) ->
-    {noreply, State#state{reqs=gb_trees:delete_any(Pid, Reqs)}};
+handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs,
+                                               open_reqs=NbReqs}=State) ->
+    State1 = case State#state.sleepers of
+        [] -> State;
+        [Sleeper | Rest] ->
+            gen_server:reply(Sleeper, ok),
+            State#state{sleepers=Rest}
+    end,
+
+    {noreply, State1#state{reqs=gb_trees:delete_any(Pid, Reqs),
+                           open_reqs=NbReqs-1}};
 
 handle_info({'EXIT', _Pid, {error, emfile}}, State) ->
     error_logger:error_msg("No more file descriptors, shutting down:
@@ -120,7 +156,8 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% internals
 %%
-accept_request(Pid, #state{reqs=Reqs, acceptors=Acceptors}=State) ->
+accept_request(Pid, #state{reqs=Reqs, open_reqs=NbReqs,
+                           acceptors=Acceptors}=State) ->
     %% remove acceptor from the list of acceptor and increase state
     unlink(Pid),
 
@@ -134,7 +171,9 @@ accept_request(Pid, #state{reqs=Reqs, acceptors=Acceptors}=State) ->
 
     MRef = erlang:monitor(process, Pid),
     NewReqs = gb_trees:enter(Pid, MRef, Reqs),
-    State#state{reqs=NewReqs, acceptors=lists:delete(Pid, Acceptors)}.
+
+    State#state{reqs=NewReqs, open_reqs=NbReqs+1,
+                acceptors=lists:delete(Pid, Acceptors)}.
 
 remove_acceptor(#state{acceptors=Acceptors, nb_acceptors=N}=State, Pid)
         when length(Acceptors) < N->
@@ -170,8 +209,11 @@ get_infos([ip|Rest], {Ip, _}=IpPort, State, Acc) ->
     get_infos(Rest, IpPort, State, [{ip, Ip}|Acc]);
 get_infos([port|Rest], {_, Port}=IpPort, State, Acc) ->
     get_infos(Rest, IpPort, State, [{port, Port}|Acc]);
-get_infos([open_reqs|Rest], IpPort, #state{reqs=Reqs}=State, Acc) ->
-    get_infos(Rest, IpPort, State, [{open_reqs, gb_trees:size(Reqs)}|Acc]);
+get_infos([open_reqs|Rest], IpPort, #state{open_reqs=NbReqs}=State, Acc) ->
+    get_infos(Rest, IpPort, State, [{open_reqs, NbReqs}|Acc]);
 get_infos([nb_acceptors|Rest], IpPort, #state{acceptors=Acceptors}=State,
          Acc) ->
-    get_infos(Rest, IpPort, State, [{acceptors, length(Acceptors)}|Acc]).
+    get_infos(Rest, IpPort, State, [{acceptors, length(Acceptors)}|Acc]);
+get_infos([max_clients|Rest], IpPort, #state{max_clients=Max}=State,
+        Acc) ->
+    get_infos(Rest, IpPort, State, [{max_clients, Max} | Acc]).
