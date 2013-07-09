@@ -28,6 +28,8 @@
                 nb_acceptors,
                 acceptors = [],
                 reqs,
+                reqs_by_age,
+                age = 0,
                 open_reqs = 0,
                 max_clients=300000,
                 sleepers=[],
@@ -91,7 +93,9 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
                 transport_opts = TransOpts,
                 acceptors = Acceptors,
                 nb_acceptors = NbAcceptors,
-                reqs = gb_trees:empty(),
+                reqs = dict:new(),
+                reqs_by_age = gb_trees:empty(),
+                age = 0,
                 open_reqs = 0,
                 max_clients = 300000,
                 sleepers = [],
@@ -115,9 +119,7 @@ handle_call({set_max_clients, Nb}, _From, State) ->
     {reply, ok, State#state{max_clients=Nb}};
 
 handle_call({set_nb_acceptors, Nb}, _From,  State) ->
-
     NewState = manage_acceptors(State#state{nb_acceptors=Nb}),
-
     {reply, ok, NewState};
 
 handle_call(start_accepting, From, #state{open_reqs=NbReqs,
@@ -148,6 +150,7 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs,
+                                               reqs_by_age=ReqsByAge,
                                                open_reqs=NbReqs}=State) ->
     State1 = case State#state.sleepers of
         [] -> State;
@@ -156,8 +159,16 @@ handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs,
             State#state{sleepers=Rest}
     end,
 
-    {noreply, State1#state{reqs=gb_trees:delete_any(Pid, Reqs),
-                           open_reqs=NbReqs-1}};
+    case dict:find(Pid, Reqs) of
+        {ok, {Age, _}} ->
+            Reqs1 = dict:erase(Pid, Reqs),
+            ReqsByAge1 = gb_trees:delete_any(Age, ReqsByAge),
+            {noreply, State1#state{reqs=Reqs1,
+                                   reqs_by_age=ReqsByAge1,
+                                   open_reqs=NbReqs-1}};
+        _ ->
+            {noreply, State1}
+    end;
 
 handle_info({'EXIT', _Pid, {error, emfile}}, State) ->
     error_logger:error_msg("No more file descriptors, shutting down:
@@ -182,10 +193,13 @@ code_change(_OldVsn, State, _Extra) ->
 %% internals
 %%
 %%
-monitor_request(Pid, #state{reqs=Reqs, open_reqs=NbReqs}=State) ->
+monitor_request(Pid, #state{reqs=Reqs, reqs_by_age=ReqsByAge,
+                            age=Age, open_reqs=NbReqs}=State) ->
     MRef = erlang:monitor(process, Pid),
-    NewReqs = gb_trees:enter(Pid, MRef, Reqs),
-    State#state{reqs=NewReqs, open_reqs=NbReqs+1}.
+    NewReqs = dict:store(Pid, {Age, MRef}, Reqs),
+    ReqsByAge1 =  gb_trees:enter(Age, {Pid, MRef}, ReqsByAge),
+    State#state{reqs=NewReqs, reqs_by_age=ReqsByAge1,
+                age=Age+1, open_reqs=NbReqs+1}.
 
 
 accept_request(Pid, #state{acceptors=Acceptors}=State) ->
