@@ -42,7 +42,7 @@ accept(Listener, Ref, Transport, ListenSocket, Opts,
                 _ ->
                     ok
             end,
-            %% we don't have to exit here since we spwaned a new process
+            %% we don't have to exit here since we spawned a new process
             %% to handle the request
             ?MODULE:accept(Listener, Ref, Transport, ListenSocket, Opts,
                            Protocol);
