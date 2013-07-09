@@ -60,8 +60,6 @@ get_nb_acceptors(Ref) ->
     [{nb_acceptors, Nb}] = info(Ref, [nb_acceptors]),
     Nb.
 
-
-
 start_accepting(Ref) ->
     gen_server:call(Ref, start_accepting, infinity).
 
@@ -88,6 +86,7 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
                                             ListenerOpts,
                                             {Protocol, ProtoOpts, Spawn})
                  || _ <- lists:seq(1, NbAcceptors)],
+
     {ok, #state{socket = Socket,
                 transport = Transport,
                 transport_opts = TransOpts,
@@ -300,7 +299,6 @@ is_request_spawned(Handler) ->
                 true ->
                     false;
                 false ->
-                    io:format("error bad proto~n", []),
                     throw({error, bad_proto})
             end
     end.
