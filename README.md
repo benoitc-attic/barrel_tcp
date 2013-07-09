@@ -28,7 +28,7 @@ Create a simple TCP echo server.
 
     -export([init/3]).
 
-    init(Transport, Socket, _Opts) ->
+    init(_ListenerRef, Transport, Socket, _Opts) ->
         wait_request(Transport, Socket).
 
     wait_request(Transport, Socket) ->
@@ -85,6 +85,7 @@ $ make devclean ; # clean all files
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_app.md" class="module">barrel_app</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_deps.md" class="module">barrel_deps</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_listener.md" class="module">barrel_listener</a></td></tr>
+<tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_server.md" class="module">barrel_server</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_ssl.md" class="module">barrel_ssl</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_sup.md" class="module">barrel_sup</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_tcp.md" class="module">barrel_tcp</a></td></tr>

@@ -10,18 +10,18 @@
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#accept-5">accept/5</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-5">start_link/5</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#accept-6">accept/6</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-5">start_link/5</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
 
 ## Function Details ##
 
-<a name="accept-5"></a>
+<a name="accept-6"></a>
 
-### accept/5 ###
+### accept/6 ###
 
-`accept(Listener, Transport, ListenSocket, Opts, Protocol) -> any()`
+`accept(Listener, Ref, Transport, ListenSocket, Opts, Protocol) -> any()`
 
 
 <a name="start_link-5"></a>

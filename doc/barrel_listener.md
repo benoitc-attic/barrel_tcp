@@ -10,7 +10,7 @@ __Behaviours:__ [`gen_server`](gen_server.md).
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#code_change-3">code_change/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_port-1">get_port/1</a></td><td></td></tr><tr><td valign="top"><a href="#handle_call-3">handle_call/3</a></td><td></td></tr><tr><td valign="top"><a href="#handle_cast-2">handle_cast/2</a></td><td></td></tr><tr><td valign="top"><a href="#handle_info-2">handle_info/2</a></td><td></td></tr><tr><td valign="top"><a href="#info-1">info/1</a></td><td></td></tr><tr><td valign="top"><a href="#info-2">info/2</a></td><td></td></tr><tr><td valign="top"><a href="#init-1">init/1</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-1">start_link/1</a></td><td></td></tr><tr><td valign="top"><a href="#start_listener-6">start_listener/6</a></td><td></td></tr><tr><td valign="top"><a href="#start_listener-7">start_listener/7</a></td><td></td></tr><tr><td valign="top"><a href="#stop_listener-1">stop_listener/1</a></td><td></td></tr><tr><td valign="top"><a href="#terminate-2">terminate/2</a></td><td></td></tr></table>
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#code_change-3">code_change/3</a></td><td></td></tr><tr><td valign="top"><a href="#get_max_clients-1">get_max_clients/1</a></td><td></td></tr><tr><td valign="top"><a href="#get_port-1">get_port/1</a></td><td></td></tr><tr><td valign="top"><a href="#handle_call-3">handle_call/3</a></td><td></td></tr><tr><td valign="top"><a href="#handle_cast-2">handle_cast/2</a></td><td></td></tr><tr><td valign="top"><a href="#handle_info-2">handle_info/2</a></td><td></td></tr><tr><td valign="top"><a href="#info-1">info/1</a></td><td></td></tr><tr><td valign="top"><a href="#info-2">info/2</a></td><td></td></tr><tr><td valign="top"><a href="#init-1">init/1</a></td><td></td></tr><tr><td valign="top"><a href="#set_max_clients-2">set_max_clients/2</a></td><td></td></tr><tr><td valign="top"><a href="#start_accepting-1">start_accepting/1</a></td><td></td></tr><tr><td valign="top"><a href="#start_link-1">start_link/1</a></td><td></td></tr><tr><td valign="top"><a href="#terminate-2">terminate/2</a></td><td></td></tr></table>
 
 
 <a name="functions"></a>
@@ -22,6 +22,13 @@ __Behaviours:__ [`gen_server`](gen_server.md).
 ### code_change/3 ###
 
 `code_change(OldVsn, State, Extra) -> any()`
+
+
+<a name="get_max_clients-1"></a>
+
+### get_max_clients/1 ###
+
+`get_max_clients(Ref) -> any()`
 
 
 <a name="get_port-1"></a>
@@ -73,32 +80,25 @@ __Behaviours:__ [`gen_server`](gen_server.md).
 `init(X1) -> any()`
 
 
+<a name="set_max_clients-2"></a>
+
+### set_max_clients/2 ###
+
+`set_max_clients(Ref, Nb) -> any()`
+
+
+<a name="start_accepting-1"></a>
+
+### start_accepting/1 ###
+
+`start_accepting(Ref) -> any()`
+
+
 <a name="start_link-1"></a>
 
 ### start_link/1 ###
 
 `start_link(Options) -> any()`
-
-
-<a name="start_listener-6"></a>
-
-### start_listener/6 ###
-
-`start_listener(Ref, NbAcceptors, Transport, TransOpts, Protocol, ProtocolOpts) -> any()`
-
-
-<a name="start_listener-7"></a>
-
-### start_listener/7 ###
-
-`start_listener(Ref, NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts, ListenerOpts0) -> any()`
-
-
-<a name="stop_listener-1"></a>
-
-### stop_listener/1 ###
-
-`stop_listener(Ref) -> any()`
 
 
 <a name="terminate-2"></a>

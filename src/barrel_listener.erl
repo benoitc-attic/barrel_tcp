@@ -122,7 +122,7 @@ handle_cast({accepted, Pid}, #state{acceptors=Acceptors}=State) ->
         true ->
             start_new_acceptor(accept_request(Pid, State));
         false ->
-            %% monitor isn't exited only monitor the spawned request
+            %% acceptor isn't exited only monitor the spawned request
             %% process.
             monitor_request(Pid, State)
     end,
