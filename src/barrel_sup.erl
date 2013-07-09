@@ -28,5 +28,13 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    {ok, { {one_for_one, 10, 10}, []} }.
+    %% initialize the table keeping infos on listeners. This table
+    %% should be public so we will be able to monitor listeners already
+    %% started if the server is stopped.
+    barrel_server = ets:new(barrel_server, [ordered_set, public,
+                                            named_table]),
+	Server = {barrel_server, {barrel_server, start_link, []},
+			permanent, 5000, worker, [barrel_server]},
+
+    {ok, { {one_for_one, 10, 10}, [Server]} }.
 

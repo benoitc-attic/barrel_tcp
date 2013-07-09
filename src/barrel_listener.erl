@@ -6,9 +6,7 @@
 -module(barrel_listener).
 -behaviour(gen_server).
 
--export([start_listener/6, start_listener/7,
-         stop_listener/1,
-         get_port/1,
+-export([get_port/1,
          info/1, info/2]).
 
 
@@ -31,34 +29,6 @@
                 protocol}).
 
 
-start_listener(Ref, NbAcceptors, Transport, TransOpts, Protocol,
-               ProtocolOpts) ->
-        start_listener(Ref, NbAcceptors, Transport, TransOpts, Protocol,
-                       ProtocolOpts, []).
-
-start_listener(Ref, NbAcceptors, Transport, TransOpts, Protocol,
-               ProtoOpts, ListenerOpts0) ->
-    _ = code:ensure_loaded(Transport),
-    case erlang:function_exported(Transport, name, 0) of
-		false ->
-			{error, badarg};
-		true ->
-            ListenerOpts = [{ref, Ref} | ListenerOpts0],
-            supervisor:start_child(barrel_sup,
-                                   child_spec(Ref, [NbAcceptors, Transport,
-                                                     TransOpts, Protocol,
-                                                     ProtoOpts,
-                                                     ListenerOpts]))
-    end.
-
-stop_listener(Ref) ->
-    case supervisor:terminate_child(barrel_sup, Ref) of
-        ok ->
-            supervisor:delete_child(barrel_sup, Ref);
-        Error ->
-            Error
-    end.
-
 get_port(Ref) ->
     gen_server:call(Ref, get_port).
 
@@ -68,15 +38,16 @@ info(Ref) ->
 info(Ref, Keys) ->
     gen_server:call(Ref, {info, Keys}).
 
-%% @doc return a child spec suitable for embeding your listener in the
-%% supervisor
-child_spec(Ref, Options) ->
-    {Ref, {barrel_listener, start_link, [Options]},
-            permanent, 5000, worker, [Ref]}.
 
 start_link([_, _, _, _, _, ListenerOpts] = Options) ->
     Ref = proplists:get_value(ref, ListenerOpts),
-    gen_server:start_link({local, Ref}, ?MODULE, Options, []).
+    case gen_server:start_link({local, Ref}, ?MODULE, Options, []) of
+        {ok, Pid} ->
+            ok = barrel_server:set_listener(Ref, Pid),
+            {ok, Pid};
+        Error ->
+            Error
+    end.
 
 init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
       ListenerOpts]) ->
