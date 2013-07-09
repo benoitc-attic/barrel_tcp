@@ -21,7 +21,7 @@ accept(Listener, Transport, ListenSocket, Opts,
     AcceptTimeout = proplists:get_value(accept_timeout, Opts, 10000),
     case catch Transport:accept(ListenSocket, AcceptTimeout) of
         {ok, Socket} ->
-            gen_server:cast(Listener, accepted),
+            gen_server:cast(Listener, {accepted, self()}),
             ProtocolHandler:init(Transport, Socket, ProtoOpts);
         {error, timeout} ->
             ?MODULE:accept(Listener, Transport, ListenSocket, Opts,

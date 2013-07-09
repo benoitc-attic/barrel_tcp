@@ -24,7 +24,8 @@
                 transport,
                 transport_opts,
                 nb_acceptors,
-                acceptors,
+                acceptors = [],
+                reqs,
                 open_reqs,
                 listener_opts,
                 protocol}).
@@ -94,6 +95,7 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
                 transport_opts = TransOpts,
                 acceptors = Acceptors,
                 nb_acceptors = NbAcceptors,
+                reqs = gb_trees:empty(),
                 open_reqs = 0,
                 listener_opts = ListenerOpts,
                 protocol = {Protocol, ProtoOpts}}}.
@@ -114,12 +116,16 @@ handle_call({info, Keys}, _From, State) ->
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
 
-handle_cast(accepted, State) ->
-    NewState = start_new_acceptor(State),
+handle_cast({accepted, Pid}, State) ->
+    %% accept a request and start a new acceptor
+    NewState = start_new_acceptor(accept_request(Pid, State)),
     {noreply, NewState};
 
 handle_cast(_Msg, State) ->
     {noreply, State}.
+
+handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs}=State) ->
+    {noreply, State#state{reqs=gb_trees:delete_any(Pid, Reqs)}};
 
 handle_info({'EXIT', _Pid, {error, emfile}}, State) ->
     lager:error("No more file descriptors, shutting down~n", []),
@@ -133,7 +139,6 @@ handle_info({'EXIT', Pid, Reason}, State) ->
                 [Pid, Reason]),
     {noreply, remove_acceptor(State, Pid)}.
 
-
 terminate(_Reason, _State) ->
     ok.
 
@@ -142,6 +147,23 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 %% internals
+%%
+accept_request(Pid, #state{reqs=Reqs, acceptors=Acceptors}=State) ->
+    %% remove acceptor from the list of acceptor and increase state
+    unlink(Pid),
+
+    %% trap premature exit
+    receive
+        {'EXIT', Pid, _} ->
+            true
+    after 0 ->
+            true
+    end,
+
+    MRef = erlang:monitor(process, Pid),
+    NewReqs = gb_trees:enter(Pid, MRef, Reqs),
+    State#state{reqs=NewReqs, acceptors=lists:delete(Pid, Acceptors)}.
+
 remove_acceptor(#state{acceptors=Acceptors, nb_acceptors=N}=State, Pid)
         when length(Acceptors) < N->
     NewPid = barrel_acceptor:start_link(self(), State#state.transport,
@@ -151,8 +173,7 @@ remove_acceptor(#state{acceptors=Acceptors, nb_acceptors=N}=State, Pid)
     Acceptors1 = [NewPid | lists:delete(Pid, Acceptors)],
     State#state{acceptors = Acceptors1};
 remove_acceptor(State, Pid) ->
-    State#state{acceptors = lists:delete(Pid, State#state.acceptors),
-                open_reqs = State#state.open_reqs - 1}.
+    State#state{acceptors = lists:delete(Pid, State#state.acceptors)}.
 
 start_new_acceptor(State) ->
     Pid = barrel_acceptor:start_link(self(), State#state.transport,
@@ -160,8 +181,7 @@ start_new_acceptor(State) ->
                                      State#state.listener_opts,
                                      State#state.protocol),
 
-    State#state{acceptors = [Pid | State#state.acceptors],
-                open_reqs = State#state.open_reqs + 1}.
+    State#state{acceptors = [Pid | State#state.acceptors]}.
 
 get_infos(Keys, #state{transport=Transport, socket=Socket}=State) ->
     IpPort = case Transport:sockname(Socket) of
@@ -178,9 +198,8 @@ get_infos([ip|Rest], {Ip, _}=IpPort, State, Acc) ->
     get_infos(Rest, IpPort, State, [{ip, Ip}|Acc]);
 get_infos([port|Rest], {_, Port}=IpPort, State, Acc) ->
     get_infos(Rest, IpPort, State, [{port, Port}|Acc]);
-get_infos([open_reqs|Rest], IpPort, #state{open_reqs=OpenReqs}=State,
-         Acc) ->
-    get_infos(Rest, IpPort, State, [{open_reqs, OpenReqs}|Acc]);
+get_infos([open_reqs|Rest], IpPort, #state{reqs=Reqs}=State, Acc) ->
+    get_infos(Rest, IpPort, State, [{open_reqs, gb_trees:size(Reqs)}|Acc]);
 get_infos([nb_acceptors|Rest], IpPort, #state{acceptors=Acceptors}=State,
          Acc) ->
     get_infos(Rest, IpPort, State, [{acceptors, length(Acceptors)}|Acc]).

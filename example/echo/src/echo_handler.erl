@@ -6,7 +6,7 @@ init(Transport, Socket, _Opts) ->
     wait_request(Transport, Socket).
 
 wait_request(Transport, Socket) ->
-    case  Transport:recv(Socket, 0, 5000) of
+    case  Transport:recv(Socket, 0, 30000) of
         {ok, <<".\r\n">>} ->
             io:format("remote exited", []),
             Transport:close(Socket);
