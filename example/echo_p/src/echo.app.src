@@ -1,0 +1,12 @@
+{application, echo,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { echo_app, []}},
+  {env, []}
+ ]}.

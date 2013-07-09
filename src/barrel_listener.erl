@@ -71,9 +71,10 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
     {ok, Socket} = Transport:listen(TransOpts),
 
     %% launch acceptors
+    Spawn = is_request_spawned(Protocol),
     Acceptors = [barrel_acceptor:start_link(self(), Transport, Socket,
                                             ListenerOpts,
-                                            {Protocol, ProtoOpts})
+                                            {Protocol, ProtoOpts, Spawn})
                  || _ <- lists:seq(1, NbAcceptors)],
     {ok, #state{socket = Socket,
                 transport = Transport,
@@ -85,7 +86,7 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
                 max_clients = 300000,
                 sleepers = [],
                 listener_opts = ListenerOpts,
-                protocol = {Protocol, ProtoOpts}}}.
+                protocol = {Protocol, ProtoOpts, Spawn}}}.
 
 
 handle_call(get_port, _From, #state{socket=S, transport=Transport}=State) ->
@@ -114,9 +115,17 @@ handle_call(start_accepting, _From, State) ->
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
 
-handle_cast({accepted, Pid}, State) ->
+handle_cast({accepted, Pid}, #state{acceptors=Acceptors}=State) ->
     %% accept a request and start a new acceptor
-    NewState = start_new_acceptor(accept_request(Pid, State)),
+    %%
+    NewState = case lists:member(Pid, Acceptors) of
+        true ->
+            start_new_acceptor(accept_request(Pid, State));
+        false ->
+            %% monitor isn't exited only monitor the spawned request
+            %% process.
+            monitor_request(Pid, State)
+    end,
     {noreply, NewState};
 
 handle_cast(_Msg, State) ->
@@ -156,8 +165,14 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% internals
 %%
-accept_request(Pid, #state{reqs=Reqs, open_reqs=NbReqs,
-                           acceptors=Acceptors}=State) ->
+%%
+monitor_request(Pid, #state{reqs=Reqs, open_reqs=NbReqs}=State) ->
+    MRef = erlang:monitor(process, Pid),
+    NewReqs = gb_trees:enter(Pid, MRef, Reqs),
+    State#state{reqs=NewReqs, open_reqs=NbReqs+1}.
+
+
+accept_request(Pid, #state{acceptors=Acceptors}=State) ->
     %% remove acceptor from the list of acceptor and increase state
     unlink(Pid),
 
@@ -169,11 +184,9 @@ accept_request(Pid, #state{reqs=Reqs, open_reqs=NbReqs,
             true
     end,
 
-    MRef = erlang:monitor(process, Pid),
-    NewReqs = gb_trees:enter(Pid, MRef, Reqs),
-
-    State#state{reqs=NewReqs, open_reqs=NbReqs+1,
-                acceptors=lists:delete(Pid, Acceptors)}.
+    %% remove the acceptor from the list and start to monitor it as a
+    %% request.
+    monitor_request(Pid, State#state{acceptors=lists:delete(Pid, Acceptors)}).
 
 remove_acceptor(#state{acceptors=Acceptors, nb_acceptors=N}=State, Pid)
         when length(Acceptors) < N->
@@ -217,3 +230,20 @@ get_infos([nb_acceptors|Rest], IpPort, #state{acceptors=Acceptors}=State,
 get_infos([max_clients|Rest], IpPort, #state{max_clients=Max}=State,
         Acc) ->
     get_infos(Rest, IpPort, State, [{max_clients, Max} | Acc]).
+
+
+is_request_spawned(Handler) ->
+    _ = code:ensure_loaded(Handler),
+
+    case erlang:function_exported(Handler, start_link, 4) of
+        true ->
+            true;
+        false ->
+            case erlang:function_exported(Handler, init, 4) of
+                true ->
+                    false;
+                false ->
+                    io:format("error bad proto~n", []),
+                    throw({error, bad_proto})
+            end
+    end.

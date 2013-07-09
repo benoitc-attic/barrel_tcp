@@ -13,6 +13,8 @@
          info/1, info/2,
          set_max_clients/2, get_max_clients/1]).
 
+-export([accept_ack/1]).
+
 -type ref() :: any().
 -export_type([ref/0]).
 
@@ -86,4 +88,8 @@ set_max_clients(Ref, MaxClients) ->
 get_max_clients(Ref) ->
     ListenerPid = barrel_server:get_listener(Ref),
     barrel_listener:get_max_clients(ListenerPid).
+
+
+accept_ack(Ref) ->
+    receive {accept_ack, Ref} -> ok end.
 
