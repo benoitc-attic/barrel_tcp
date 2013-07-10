@@ -229,11 +229,6 @@ handle_info({req_down, _Pid}, #state{open_reqs=NbReqs}=State) ->
 
     {noreply, State1#state{open_reqs=NbReqs-1}};
 
-handle_info({'EXIT', _Pid, {error, emfile}}, State) ->
-    error_logger:error_msg("No more file descriptors, shutting down:
-                           ~p~n", [?MODULE]),
-    {stop, emfile, State};
-
 handle_info({'EXIT', Pid, normal}, State) ->
     {noreply, remove_acceptor(State, Pid)};
 

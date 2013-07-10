@@ -49,6 +49,12 @@ accept(Listener, Ref, Transport, ListenSocket, Opts,
         {error, timeout} ->
             ?MODULE:accept(Listener, Ref, Transport, ListenSocket, Opts,
                            Protocol);
+        {error, emfile} ->
+            %% rather than exiting the acceptor when we run out of file
+            %% descriptors wait a little and retry to accept.
+            receive after 100 -> ok end,
+            ?MODULE:accept(Listener, Ref, Transport, ListenSocket, Opts,
+                           Protocol);
         {error, econnaborted} ->
             ?MODULE:accept(Listener, Ref, Transport, ListenSocket, Opts,
                            Protocol);
