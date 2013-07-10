@@ -71,16 +71,16 @@ set_protocol_conf(Ref, Handler, Opts, GracefulTimeout) ->
     gen_server:call(Ref, {set_protocol_conf, Handler, Opts,
                           GracefulTimeout}).
 
-%% get the protocol configuration
+%% @doc get the protocol configuration
 get_protocol_conf(Ref) ->
     gen_server:call(Ref, get_protocol_conf).
 
-%% remove a connection from the connection manager
+%% @doc remove a connection from the connection manager
 remove_connection(Ref, Pid) ->
     gen_server:call(Ref, {remove_connection, Pid}).
 
 
-%% internal api, tell to the acceptor if he can start to accept a new
+%% @doc internal api, tell to the acceptor if he can start to accept a new
 %% connection.
 start_accepting(Ref) ->
     gen_server:call(Ref, start_accepting, infinity).
