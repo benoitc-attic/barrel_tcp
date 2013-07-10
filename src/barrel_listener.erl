@@ -10,7 +10,8 @@
          info/1, info/2,
          set_max_clients/2, get_max_clients/1,
          set_nb_acceptors/2, get_nb_acceptors/1,
-         set_protocol_conf/4, get_protocol_conf/1]).
+         set_protocol_conf/4, get_protocol_conf/1,
+         remove_connection/2]).
 
 
 %% internal API
@@ -73,6 +74,11 @@ set_protocol_conf(Ref, Handler, Opts, GracefulTimeout) ->
 %% get the protocol configuration
 get_protocol_conf(Ref) ->
     gen_server:call(Ref, get_protocol_conf).
+
+%% remove a connection from the connection manager
+remove_connection(Ref, Pid) ->
+    gen_server:call(Ref, {remove_connection, Pid}).
+
 
 %% internal api, tell to the acceptor if he can start to accept a new
 %% connection.
@@ -179,6 +185,16 @@ handle_call({set_protocol_conf, Handler, Opts, GracefulTimeout}, _From,
 handle_call(get_protocol_conf, _From,
             #state{protocol={Handler,Opts, _}}=State) ->
     {reply, {Handler, Opts}, State};
+
+handle_call({remove_connection, Pid}, _From,
+            #state{conn_managers = [{MgrPid, _} | _],
+                   open_reqs=OpenReqs}=State) ->
+
+    %% tell the manage to remove the connection
+    gen_server:cast(MgrPid, {remove_connection, Pid}),
+
+    %% decrease the number of open requests
+    {reply, ok, State#state{open_reqs=OpenReqs-1}};
 
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.

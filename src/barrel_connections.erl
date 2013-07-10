@@ -77,6 +77,21 @@ handle_cast({add_connection, Pid}, #state{reqs=Reqs,
     {noreply, State#state{reqs=NewReqs,
                           reqs_by_age=ReqsByAge1,
                           age=Age+1}};
+handle_cast({remove_connection, Pid}, #state{reqs=Reqs,
+                                          reqs_by_age=ReqsByAge,
+                                          age=Age}=State) ->
+    case dict:find(Pid, Reqs) of
+        {ok, {Age, MRef}} ->
+            erlang:demonitor(MRef),
+            Reqs1 = dict:erase(Pid, Reqs),
+            ReqsByAge1 = gb_trees:delete_any(Age, ReqsByAge),
+            NewState = State#state{reqs=Reqs1,
+                                   reqs_by_age=ReqsByAge1},
+            {noreply, NewState};
+        _ ->
+            {noreply, State}
+    end;
+
 
 handle_cast(_Msg, State) ->
     {noreply, State}.

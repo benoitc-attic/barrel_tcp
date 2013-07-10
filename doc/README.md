@@ -8,7 +8,7 @@ __Version:__ 2.0
 
 # barrel
 
-barrel is a generic TCP acceptor pool with low latency in Erlang.
+barrel is a **generic TCP acceptor pool** with low latency in Erlang.
 
 **Main Features**:
 

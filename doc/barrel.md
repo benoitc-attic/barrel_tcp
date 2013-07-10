@@ -52,8 +52,10 @@ ref() = any()
 ## Function Index ##
 
 
-<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#accept_ack-1">accept_ack/1</a></td><td></td></tr><tr><td valign="top"><a href="#child_spec-2">child_spec/2</a></td><td>return a child spec suitable for embeding your listener in the
-supervisor.</td></tr><tr><td valign="top"><a href="#get_max_clients-1">get_max_clients/1</a></td><td>get max number of concurrent clients.</td></tr><tr><td valign="top"><a href="#get_nb_acceptors-1">get_nb_acceptors/1</a></td><td>get the number of acceptors set for a listener.</td></tr><tr><td valign="top"><a href="#get_port-1">get_port/1</a></td><td>get current port of a listener.</td></tr><tr><td valign="top"><a href="#get_protocol_conf-1">get_protocol_conf/1</a></td><td>get the protocol configuration.</td></tr><tr><td valign="top"><a href="#info-1">info/1</a></td><td>get all infos of a listener.</td></tr><tr><td valign="top"><a href="#info-2">info/2</a></td><td>get info for some keys.</td></tr><tr><td valign="top"><a href="#set_max_clients-2">set_max_clients/2</a></td><td>set max number of concurrent clients.</td></tr><tr><td valign="top"><a href="#set_nb_acceptors-2">set_nb_acceptors/2</a></td><td>set the number of acceptors for a listener.</td></tr><tr><td valign="top"><a href="#set_protocol_conf-3">set_protocol_conf/3</a></td><td>update the protocol configuration and kill the connections after
+<table width="100%" border="1" cellspacing="0" cellpadding="2" summary="function index"><tr><td valign="top"><a href="#accept_ack-1">accept_ack/1</a></td><td> used to start to handle the connection in a spawned protocol process.</td></tr><tr><td valign="top"><a href="#child_spec-2">child_spec/2</a></td><td>return a child spec suitable for embeding your listener in the
+supervisor.</td></tr><tr><td valign="top"><a href="#get_max_clients-1">get_max_clients/1</a></td><td>get max number of concurrent clients.</td></tr><tr><td valign="top"><a href="#get_nb_acceptors-1">get_nb_acceptors/1</a></td><td>get the number of acceptors set for a listener.</td></tr><tr><td valign="top"><a href="#get_port-1">get_port/1</a></td><td>get current port of a listener.</td></tr><tr><td valign="top"><a href="#get_protocol_conf-1">get_protocol_conf/1</a></td><td>get the protocol configuration.</td></tr><tr><td valign="top"><a href="#info-1">info/1</a></td><td>get all infos of a listener.</td></tr><tr><td valign="top"><a href="#info-2">info/2</a></td><td>get info for some keys.</td></tr><tr><td valign="top"><a href="#remove_connection-2">remove_connection/2</a></td><td>remove a connection from the connection manager
+Useful when you want to keep this connection open but don't want to
+count in the concurrent connections managed by a listener.</td></tr><tr><td valign="top"><a href="#set_max_clients-2">set_max_clients/2</a></td><td>set max number of concurrent clients.</td></tr><tr><td valign="top"><a href="#set_nb_acceptors-2">set_nb_acceptors/2</a></td><td>set the number of acceptors for a listener.</td></tr><tr><td valign="top"><a href="#set_protocol_conf-3">set_protocol_conf/3</a></td><td>update the protocol configuration and kill the connections after
 30s.</td></tr><tr><td valign="top"><a href="#set_protocol_conf-4">set_protocol_conf/4</a></td><td>update the protocol configuration and kill the connections after
 a timeout.</td></tr><tr><td valign="top"><a href="#start-0">start/0</a></td><td>Start the barrel application.</td></tr><tr><td valign="top"><a href="#start_listener-6">start_listener/6</a></td><td>start a listener.</td></tr><tr><td valign="top"><a href="#start_listener-7">start_listener/7</a></td><td></td></tr><tr><td valign="top"><a href="#stop-0">stop/0</a></td><td>Start the coffer application.</td></tr><tr><td valign="top"><a href="#stop_listener-1">stop_listener/1</a></td><td>stop a listener
 All connections and acceptors for this listener are killed
@@ -70,7 +72,9 @@ immediately.</td></tr></table>
 
 `accept_ack(Ref) -> any()`
 
-
+ used to start to handle the connection in a spawned protocol process.
+It is needed to use this function first so the control of the socket
+is given to the process.
 <a name="child_spec-2"></a>
 
 ### child_spec/2 ###
@@ -158,6 +162,15 @@ get info for some keys
 
 Ref = term()
 Key = ip | port | open_reqs | nb_acceptors | max_clients
+<a name="remove_connection-2"></a>
+
+### remove_connection/2 ###
+
+`remove_connection(Ref, Pid) -> any()`
+
+remove a connection from the connection manager
+Useful when you want to keep this connection open but don't want to
+count in the concurrent connections managed by a listener
 <a name="set_max_clients-2"></a>
 
 ### set_max_clients/2 ###

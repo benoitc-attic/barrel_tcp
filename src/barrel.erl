@@ -14,7 +14,8 @@
          set_max_clients/2, get_max_clients/1,
          set_nb_acceptors/2, get_nb_acceptors/1,
          set_protocol_conf/3, set_protocol_conf/4,
-         get_protocol_conf/1]).
+         get_protocol_conf/1,
+         remove_connection/2]).
 
 -export([accept_ack/1]).
 
@@ -175,8 +176,16 @@ get_protocol_conf(Ref) ->
     ListenerPid = barrel_server:get_listener(Ref),
     barrel_listener:get_protocol_conf(ListenerPid).
 
-%% used to start to handle the connection in a spawned protocol process.
+%% @doc  used to start to handle the connection in a spawned protocol process.
 %% It is needed to use this function first so the control of the socket
 %% is given to the process.
 accept_ack(Ref) ->
     receive {accept_ack, Ref} -> ok end.
+
+
+%% @doc remove a connection from the connection manager
+%% Useful when you want to keep this connection open but don't want to
+%% count in the concurrent connections managed by a listener
+remove_connection(Ref, Pid) ->
+    ListenerPid = barrel_server:get_listener(Ref),
+    barrel_listener:remove_connection(ListenerPid, Pid).
