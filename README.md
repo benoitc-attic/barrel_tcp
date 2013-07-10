@@ -10,14 +10,7 @@ __Version:__ 2.0
 
 barrel is a generic TCP acceptor pool with low latency in Erlang.
 
-> The design of barrel differs from
-> [ranch](http://github.com/extend/ranch). Instead of spawning with a
-> new which can be slow, Barrel is only spawning a new acceptors. The
-> accepted socket will continue to be used in the same process that
-> accepted it before. Optionnaly you can also launch a process to handle
-> the accepted socket if you want. Choice is yours.
-
-Main Features:
+**Main Features**:
 
 - start/stop TCP and SSL listener
 - can be use with different transports based on an "accept" model. (can
@@ -27,6 +20,15 @@ be stcp, uTCP...)
 - Graceful reload of protocol configurations
 - Scale the number of concurrent connection accepted at the same time
 - Scale the number of concurrent connections handled by a listener
+
+## Design
+
+> The design of barrel differs from
+> [ranch](http://github.com/extend/ranch). Instead of spawning with a
+> new which can be slow, Barrel is only spawning a new acceptors. The
+> accepted socket will continue to be used in the same process that
+> accepted it before. Optionnaly you can also launch a process to handle
+> the accepted socket if you want. Choice is yours.
 
 ## Usage
 
