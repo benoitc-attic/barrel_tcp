@@ -12,7 +12,9 @@
          get_port/1,
          info/1, info/2,
          set_max_clients/2, get_max_clients/1,
-         set_nb_acceptors/2, get_nb_acceptors/1]).
+         set_nb_acceptors/2, get_nb_acceptors/1,
+         set_protocol_conf/3, set_protocol_conf/4,
+         get_protocol_conf/1]).
 
 -export([accept_ack/1]).
 
@@ -97,6 +99,20 @@ set_nb_acceptors(Ref, Nb) ->
 get_nb_acceptors(Ref) ->
     ListenerPid = barrel_server:get_listener(Ref),
     barrel_listener:get_nb_acceptors(ListenerPid).
+
+
+set_protocol_conf(Ref, Handler, Options) ->
+    set_protocol_conf(Ref, Handler, Options, 30000).
+
+set_protocol_conf(Ref, Handler, Options, GracefulTimeout) ->
+    ListenerPid = barrel_server:get_listener(Ref),
+    barrel_listener:set_protocol_conf(ListenerPid, Handler, Options,
+                                      GracefulTimeout).
+
+
+get_protocol_conf(Ref) ->
+    ListenerPid = barrel_server:get_listener(Ref),
+    barrel_listener:get_protocol_conf(ListenerPid).
 
 
 accept_ack(Ref) ->

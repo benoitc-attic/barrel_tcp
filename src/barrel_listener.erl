@@ -9,7 +9,8 @@
 -export([get_port/1,
          info/1, info/2,
          set_max_clients/2, get_max_clients/1,
-         set_nb_acceptors/2, get_nb_acceptors/1]).
+         set_nb_acceptors/2, get_nb_acceptors/1,
+         set_protocol_conf/4, get_protocol_conf/1]).
 
 
 %% internal API
@@ -27,9 +28,7 @@
                 transport_opts,
                 nb_acceptors,
                 acceptors = [],
-                reqs,
-                reqs_by_age,
-                age = 0,
+                conn_managers = [],
                 open_reqs = 0,
                 max_clients=300000,
                 sleepers=[],
@@ -60,6 +59,12 @@ get_nb_acceptors(Ref) ->
     [{nb_acceptors, Nb}] = info(Ref, [nb_acceptors]),
     Nb.
 
+set_protocol_conf(Ref, Handler, Opts, GracefulTimeout) ->
+    gen_server:call(Ref, {set_protocol_conf, Handler, Opts,
+                          GracefulTimeout}).
+get_protocol_conf(Ref) ->
+    gen_server:call(Ref, get_protocol_conf).
+
 start_accepting(Ref) ->
     gen_server:call(Ref, start_accepting, infinity).
 
@@ -87,14 +92,15 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
                                             {Protocol, ProtoOpts, Spawn})
                  || _ <- lists:seq(1, NbAcceptors)],
 
+    %% Start the connection monitor
+    {ok, ConnManager} = barrel_connections:start(),
+
     {ok, #state{socket = Socket,
                 transport = Transport,
                 transport_opts = TransOpts,
                 acceptors = Acceptors,
                 nb_acceptors = NbAcceptors,
-                reqs = dict:new(),
-                reqs_by_age = gb_trees:empty(),
-                age = 0,
+                conn_managers = [ConnManager],
                 open_reqs = 0,
                 max_clients = 300000,
                 sleepers = [],
@@ -129,6 +135,36 @@ handle_call(start_accepting, From, #state{open_reqs=NbReqs,
 handle_call(start_accepting, _From, State) ->
     {reply, ok, State};
 
+handle_call({set_protocol_conf, Handler, Opts, GracefulTimeout}, _From,
+            #state{conn_managers=Managers,
+                   nb_acceptors=Nb,
+                   acceptors=Acceptors}=State) ->
+
+    [{Pid, _} | _] = Managers,
+    State1 = State#state{protocol={Handler, Opts,
+                                   is_request_spawned(Handler)}},
+
+    %% spawn new acceptors with the upgraded protocol
+    NewAcceptors = spawn_acceptors(Nb, State1),
+
+    %% kill old acceptors,
+    [catch exit(AcceptorPid, normal) || AcceptorPid <- Acceptors],
+
+
+    {ok, NewConnMgr} = barrel_connections:start(),
+
+    %% tell to the connections supervisor to shutdown ASAP
+    ok = barrel_connections:shutdown(Pid, GracefulTimeout),
+
+    {reply, ok, State1#state{acceptors=NewAcceptors,
+                             conn_managers=[NewConnMgr | Managers]}};
+
+handle_call(get_protocol_conf, _From,
+            #state{protocol={Handler,Opts, _}}=State) ->
+    {reply, {Handler, Opts}, State};
+
+
+
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
 
@@ -148,9 +184,27 @@ handle_cast({accepted, Pid}, #state{acceptors=Acceptors}=State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs,
-                                               reqs_by_age=ReqsByAge,
-                                               open_reqs=NbReqs}=State) ->
+handle_info({'DOWN', _MRef, _, Pid, _},
+            #state{conn_managers=[{Pid, _} | Rest]}=State) ->
+    error_logger:error_msg("connection supervisor down: ~p~n", [self()]),
+
+    {ok, NewConnMgr} = barrel_connections:start(),
+    {noreply, State#state{conn_managers=[NewConnMgr | Rest]}};
+
+handle_info({'DOWN', _MRef, _, Pid, _},
+            #state{conn_managers=Managers}=State) ->
+
+    case lists:keyfind(Pid, 1, Managers) of
+        false ->
+            {no_reply, State};
+        _ ->
+            {ok, NewConnMgr} = barrel_connections:start(),
+            NewManagers = [NewConnMgr | lists:keydelete(Pid, 1, Managers)],
+            {noreply, State#state{conn_managers=NewManagers}}
+    end;
+
+
+handle_info({req_down, _Pid}, #state{open_reqs=NbReqs}=State) ->
     State1 = case State#state.sleepers of
         [] -> State;
         [Sleeper | Rest] ->
@@ -158,16 +212,7 @@ handle_info({'DOWN', _MRef, _, Pid, _}, #state{reqs=Reqs,
             State#state{sleepers=Rest}
     end,
 
-    case dict:find(Pid, Reqs) of
-        {ok, {Age, _}} ->
-            Reqs1 = dict:erase(Pid, Reqs),
-            ReqsByAge1 = gb_trees:delete_any(Age, ReqsByAge),
-            {noreply, State1#state{reqs=Reqs1,
-                                   reqs_by_age=ReqsByAge1,
-                                   open_reqs=NbReqs-1}};
-        _ ->
-            {noreply, State1}
-    end;
+    {noreply, State1#state{open_reqs=NbReqs-1}};
 
 handle_info({'EXIT', _Pid, {error, emfile}}, State) ->
     error_logger:error_msg("No more file descriptors, shutting down:
@@ -182,7 +227,13 @@ handle_info({'EXIT', Pid, Reason}, State) ->
                 [Pid, Reason]),
     {noreply, remove_acceptor(State, Pid)}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{conn_managers=Managers}) ->
+    %% kill all connections managers
+    %%
+    lists:foreach(fun({Pid, MRef}) ->
+                erlang:demonitor(MRef),
+                barrel_connections:stop(Pid)
+        end, Managers),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -192,14 +243,10 @@ code_change(_OldVsn, State, _Extra) ->
 %% internals
 %%
 %%
-monitor_request(Pid, #state{reqs=Reqs, reqs_by_age=ReqsByAge,
-                            age=Age, open_reqs=NbReqs}=State) ->
-    MRef = erlang:monitor(process, Pid),
-    NewReqs = dict:store(Pid, {Age, MRef}, Reqs),
-    ReqsByAge1 =  gb_trees:enter(Age, {Pid, MRef}, ReqsByAge),
-    State#state{reqs=NewReqs, reqs_by_age=ReqsByAge1,
-                age=Age+1, open_reqs=NbReqs+1}.
-
+monitor_request(Pid, #state{conn_managers=[{MgrPid, _} | _],
+                            open_reqs=NbReqs}=State) ->
+    barrel_connections:add_connection(MgrPid, Pid),
+    State#state{open_reqs=NbReqs+1}.
 
 accept_request(Pid, #state{acceptors=Acceptors}=State) ->
     %% remove acceptor from the list of acceptor and increase state
@@ -255,12 +302,12 @@ spawn_acceptors(Nb, State) ->
      || _ <- lists:seq(1, Nb)].
 
 
-murder_acceptors(Acceptors, 0) ->
+murder_acceptors(Acceptors, 1) ->
     lists:reverse(Acceptors);
 murder_acceptors([], _N) ->
     [];
 murder_acceptors([Pid | Rest], N) ->
-    exit(Pid, normal),
+    catch exit(Pid, normal),
     murder_acceptors(Rest, N-1).
 
 get_infos(Keys, #state{transport=Transport, socket=Socket}=State) ->
