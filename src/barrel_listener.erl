@@ -138,7 +138,8 @@ handle_call(start_accepting, _From, State) ->
 handle_call({set_protocol_conf, Handler, Opts, GracefulTimeout}, _From,
             #state{conn_managers=Managers,
                    nb_acceptors=Nb,
-                   acceptors=Acceptors}=State) ->
+                   acceptors=Acceptors,
+                   sleepers=Sleepers}=State) ->
 
     [{Pid, _} | _] = Managers,
     State1 = State#state{protocol={Handler, Opts,
@@ -149,6 +150,11 @@ handle_call({set_protocol_conf, Handler, Opts, GracefulTimeout}, _From,
 
     %% kill old acceptors,
     [catch exit(AcceptorPid, normal) || AcceptorPid <- Acceptors],
+
+    %% kill sleepers if any
+    lists:foreach(fun({SleeperPid, _}) ->
+                catch exit(SleeperPid, normal)
+        end, Sleepers),
 
 
     {ok, NewConnMgr} = barrel_connections:start(),
@@ -162,8 +168,6 @@ handle_call({set_protocol_conf, Handler, Opts, GracefulTimeout}, _From,
 handle_call(get_protocol_conf, _From,
             #state{protocol={Handler,Opts, _}}=State) ->
     {reply, {Handler, Opts}, State};
-
-
 
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
