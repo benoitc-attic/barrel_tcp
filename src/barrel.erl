@@ -46,6 +46,7 @@ stop() ->
 -spec start_listener(barrel:ref(), integer(), any(), any(), any(),
                      any()) -> {ok, pid()} | {error, term()}.
 %% @doc start a listener
+%%
 %% ```
 %%   Ref = term()
 %%   NbAcceptors = integer()
@@ -169,7 +170,7 @@ set_protocol_conf(Ref, Handler, Options, GracefulTimeout) ->
     barrel_listener:set_protocol_conf(ListenerPid, Handler, Options,
                                       GracefulTimeout).
 
-%% get the protocol configuration
+%% @doc get the protocol configuration
 get_protocol_conf(Ref) ->
     ListenerPid = barrel_server:get_listener(Ref),
     barrel_listener:get_protocol_conf(ListenerPid).
