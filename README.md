@@ -25,7 +25,7 @@ be stcp, uTCP...)
 
 > The design of barrel differs from
 > [ranch](http://github.com/extend/ranch). Instead of spawning with a
-> new which can be slow, Barrel is only spawning a new acceptors. The
+> new request handler which can be slow, Barrel is only spawning a new acceptors. The
 > accepted socket will continue to be used in the same process that
 > accepted it before. Optionnaly you can also launch a process to handle
 > the accepted socket if you want. Choice is yours.
