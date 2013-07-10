@@ -51,7 +51,7 @@ info(Ref, Keys) ->
 set_max_clients(Ref, Nb) ->
     gen_server:call(Ref, {set_max_clients, Nb}).
 
-%% @doc get max number of concurrent cliens
+%% @doc get max number of concurrent clients
 get_max_clients(Ref) ->
     [{max_clients, Max}] = info(Ref, [max_connection]),
     Max.
