@@ -83,6 +83,7 @@ $ make devclean ; # clean all files
 <tr><td><a href="barrel.md" class="module">barrel</a></td></tr>
 <tr><td><a href="barrel_acceptor.md" class="module">barrel_acceptor</a></td></tr>
 <tr><td><a href="barrel_app.md" class="module">barrel_app</a></td></tr>
+<tr><td><a href="barrel_connections.md" class="module">barrel_connections</a></td></tr>
 <tr><td><a href="barrel_deps.md" class="module">barrel_deps</a></td></tr>
 <tr><td><a href="barrel_listener.md" class="module">barrel_listener</a></td></tr>
 <tr><td><a href="barrel_server.md" class="module">barrel_server</a></td></tr>

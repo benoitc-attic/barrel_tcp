@@ -35,36 +35,47 @@
                 listener_opts,
                 protocol}).
 
-
+%% @doc get current port
 get_port(Ref) ->
     gen_server:call(Ref, get_port).
 
+%% @doc get all infos
 info(Ref) ->
     info(Ref, [ip, port, open_reqs, nb_acceptors, max_clients]).
 
+%% @doc get info for some keys
 info(Ref, Keys) ->
     gen_server:call(Ref, {info, Keys}).
 
+%% @doc set max number of concurrent clients
 set_max_clients(Ref, Nb) ->
     gen_server:call(Ref, {set_max_clients, Nb}).
 
+%% @doc get max number of concurrent cliens
 get_max_clients(Ref) ->
     [{max_clients, Max}] = info(Ref, [max_connection]),
     Max.
 
+%% @doc set the number of acceptors
 set_nb_acceptors(Ref, Nb) ->
     gen_server:call(Ref, {set_nb_acceptors, Nb}).
 
+%% @doc get the number of acceptors
 get_nb_acceptors(Ref) ->
     [{nb_acceptors, Nb}] = info(Ref, [nb_acceptors]),
     Nb.
 
+%% @doc update the protocol configuration and kill after a timeout
 set_protocol_conf(Ref, Handler, Opts, GracefulTimeout) ->
     gen_server:call(Ref, {set_protocol_conf, Handler, Opts,
                           GracefulTimeout}).
+
+%% get the protocol configuration
 get_protocol_conf(Ref) ->
     gen_server:call(Ref, get_protocol_conf).
 
+%% internal api, tell to the acceptor if he can start to accept a new
+%% connection.
 start_accepting(Ref) ->
     gen_server:call(Ref, start_accepting, infinity).
 

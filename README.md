@@ -83,6 +83,7 @@ $ make devclean ; # clean all files
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel.md" class="module">barrel</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_acceptor.md" class="module">barrel_acceptor</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_app.md" class="module">barrel_app</a></td></tr>
+<tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_connections.md" class="module">barrel_connections</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_deps.md" class="module">barrel_deps</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_listener.md" class="module">barrel_listener</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_server.md" class="module">barrel_server</a></td></tr>
