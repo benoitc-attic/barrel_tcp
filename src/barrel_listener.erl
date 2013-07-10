@@ -187,14 +187,13 @@ handle_call(get_protocol_conf, _From,
     {reply, {Handler, Opts}, State};
 
 handle_call({remove_connection, Pid}, _From,
-            #state{conn_managers = [{MgrPid, _} | _],
-                   open_reqs=OpenReqs}=State) ->
+            #state{conn_managers = [{MgrPid, _} | _]}=State) ->
 
     %% tell the manage to remove the connection
     gen_server:cast(MgrPid, {remove_connection, Pid}),
 
     %% decrease the number of open requests
-    {reply, ok, State#state{open_reqs=OpenReqs-1}};
+    {reply, ok, State};
 
 handle_call(_Msg, _From, State) ->
     {reply, ok, State}.
