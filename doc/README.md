@@ -6,7 +6,6 @@ Copyright (c) 2013 Benoît Chesneau.
 
 __Version:__ 2.0
 
-# barrel
 
 barrel is a **generic TCP acceptor pool** with low latency in Erlang.
 
@@ -18,18 +17,18 @@ be stcp, uTCP...)
 - Low latency when accepting connection
 - Any protocol can be used, can be HTTP, IRC or anything you want.
 - Graceful reload of protocol configurations
-- Scale the number of concurrent connection accepted at the same time
+- Scale the number of concurrent connections accepted at the same time
 - Scale the number of concurrent connections handled by a listener
 
 ## Design
 
 > The design of barrel differs from
-> [ranch](http://github.com/extend/ranch). Instead of spawning with a
-> new request handler and pass to it the control of the socket -  which
-> can be slow - Barrel is only spawning a new acceptor. The accepted
+> [ranch](http://github.com/extend/ranch). Instead of spawning
+> a new handler for each request, then making it control the socket - which
+> can be slow - barrel spawns new acceptors. The accepted
 > socket will continue to be used in the same process that accepted it
-> before. Optionnaly you can also launch a process to handle the
-> accepted socket if you want. Choice is yours.
+> previously. Optionally you can launch a process to handle the
+> accepted socket if you want. The choice is yours.
 
 ## Usage
 
@@ -59,12 +58,12 @@ wait_request(Transport, Socket) ->
     end.
 ```
 
-`init/4` is the function that received the transport (`barrel_tcp` if TCP or
+`init/4` is the function that receives the transport (`barrel_tcp` if TCP or
 `barrel_ssl` if SSL) socket.
 
-Note that by default the design of barrel use the process that accepted
-the connection to handle the request. In short the acceptor process
-become the request process. In some case you may want to launch a new
+Note that, by default, barrel uses the process accepting
+the connection to handle the request. In other words, the acceptor process
+becomes the request process. In the other case you may want to launch a new
 process instead and pass the control of the socket to it (which is the
 only way to do it in ranch). In this case instead of `init/4` use a
 `start_link/4` function. Eg. :
@@ -95,19 +94,18 @@ barrel:start_listener(Ref, NbAcceptors, Transport, TransportOptions,
 ```
 
 A Ref can be any Erlang term used to identify a listener. A listener is
-a gen_server that manage all acceptors workers and handle connections
-shutdown.
+a gen_server that manages all the acceptors workers and handles connection
+shutdowns.
 
-A protocol is the  protocol used to handle a connection. It can be any
-module following the protocol behaviour. Barrel offers to handle the TCP
-(`barel_tcp`) ans SSL/TLS (`barel_ssl`) protocol
-for now.
+A `Protocol` is the protocol used to handle a connection. It can be any
+module following the protocol behaviour. Currently Barrel handles the TCP
+(`barel_tcp`) and SSL/TLS (`barel_ssl`) protocols.
 
-A protocol is what will be used to handle the data coming from the
-socket. You can pass to it some options (ProtocolOpts).
+A `Protocol` is what will be used to handle the data coming from the
+socket. You can pass `ProtocolOpts` to it.
 
-Optionnaly you can pass custom options to the listener. This is where
-you pass the SSL options for example.
+Additionaly you can pass custom options to the listener. This is where
+you pass the SSL options, for example.
 
 The full example can be found in the [example folder](http://github.com/benoitc/barrel/tree/master/example/echo).
 
@@ -115,9 +113,8 @@ The full example can be found in the [example folder](http://github.com/benoitc/
 
 #### Number of acceptors
 
-There are 2 way to scale a listener in barrel. The first one is to
-increase the number of acceptors. By default the the number of acceptors
-is 100.
+There are 2 way of scaling a listener in barrel. One is to increase the
+number of acceptors. By default the the number of acceptors is 100.
 
 To do it use the `barrel:set_nb_acceptors/2` function.
 
@@ -127,26 +124,26 @@ concurrent connections you can **accept** at the same time
 ### Number of clients
 
 While increasing the number of acceptors increase the number of
-concurrent connections you **accept** at the same time, you can also fix
-the number of concurrent conncections (clients) you want to handle. This
-can be useful to limit the usage of the resources (memory & number of
+concurrent connections you **accept** at the same time; you can also fix
+the number of concurrent conncections (clients) you are willing to handle.
+This can be used to limit the usage of the resources (memory and
 file descriptors).
 
 To do it use the `barrel:set_max_client/2` function.
 
 ### Load a new protocol configuration
 
-barrel allows you to either change the protocol handler or its
-configuration without closing immediately running connections.
+Barrel allows you to either change the protocol handler or its
+configuration without closing the active connections.
 
-What happen here is that once you pass a new protocol configuration
+What happens here is that once you pass a new protocol configuration
 using the function `barrel:set_protocol_conf/4` to the
-listener, new acceptors will be launched with the new configurations and
-old acceptors will be killed right after. Once it's done a graceful
-shutdown will be sent to the connections. If the graceful timeout is
-none, then the connections will continue to run until they die, in other
-case the connections will be killed after this time. This behaviour is
-quite similar to the one you can find in
+listener, new acceptors will be launched with the new configuration and
+old acceptors will get killed right after. Once it's done, a graceful
+shutdown will be sent to the remaining connections. If the graceful timeout is
+not defined, the connections will continue to run until they die, otherwise
+the connections will get killed after that time passes. This behaviour is
+similar to the one you can find in
 [nginx](http://wiki.nginx.org/CommandLine#Loading_a_New_Configuration_Using_Signals).
 
 ## Contribute
@@ -156,8 +153,8 @@ issue](http://github.com/benoitc/barrel/issues).
 
 ### Notes for developers
 
-If you want to contribute patches or improve the doc, you will need to
-build barrel using the `rebar_dev.config`  file. It can also be built
+If you want to contribute patches or improve the docs, you will need to
+build Barrel using the `rebar_dev.config`  file. It can also be built
 using the **Makefile**:
 
 ```

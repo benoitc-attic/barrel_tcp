@@ -1,11 +1,11 @@
 
+
 # barrel - generic TCP acceptor pool #
 
 Copyright (c) 2013 Benoît Chesneau.
 
 __Version:__ 2.0
 
-# barrel
 
 barrel is a **generic TCP acceptor pool** with low latency in Erlang.
 
@@ -113,9 +113,8 @@ The full example can be found in the [example folder](http://github.com/benoitc/
 
 #### Number of acceptors
 
-There are 2 ways of scaling a listener in barrel. One is to
-increase the number of acceptors. By default the the number of acceptors
-is 100.
+There are 2 way of scaling a listener in barrel. One is to increase the
+number of acceptors. By default the the number of acceptors is 100.
 
 To do it use the `barrel:set_nb_acceptors/2` function.
 
@@ -180,5 +179,4 @@ $ make devclean ; # clean all files
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_sup.md" class="module">barrel_sup</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_tcp.md" class="module">barrel_tcp</a></td></tr>
 <tr><td><a href="http://github.com/benoitc/barrel/blob/master/doc/barrel_util.md" class="module">barrel_util</a></td></tr></table>
-
 
