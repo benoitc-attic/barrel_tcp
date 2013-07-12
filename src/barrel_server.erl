@@ -32,7 +32,7 @@ start_link() ->
 
 init([]) ->
 	Monitors = [{{erlang:monitor(process, Pid), Pid}, Ref} ||
-		[Ref, Pid] <- ets:match(?TAB, {{conns_sup, '$1'}, '$2'})],
+		[Ref, Pid] <- ets:match(?TAB, {{listeners, '$1'}, '$2'})],
 	{ok, #state{monitors=Monitors}}.
 
 
@@ -58,7 +58,7 @@ handle_cast(_Request, State) ->
 handle_info({'DOWN', MRef, process, Pid, _},
             State=#state{monitors=Monitors}) ->
 	{_, Ref} = lists:keyfind({MRef, Pid}, 1, Monitors),
-	true = ets:delete(?TAB, {conns_sup, Ref}),
+	true = ets:delete(?TAB, {listeners, Ref}),
 	Monitors2 = lists:keydelete({MRef, Pid}, 1, Monitors),
 	{noreply, State#state{monitors=Monitors2}};
 handle_info(_Info, State) ->
