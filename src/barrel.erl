@@ -86,11 +86,18 @@ start_listener(Ref, NbAcceptors, Transport, TransOpts, Protocol,
 			{error, badarg};
 		true ->
             ListenerOpts = [{ref, Ref} | ListenerOpts0],
-            supervisor:start_child(barrel_sup,
-                                   child_spec(Ref, [NbAcceptors, Transport,
-                                                     TransOpts, Protocol,
-                                                     ProtoOpts,
-                                                     ListenerOpts]))
+            Socket = proplists:get_value(socket, TransOpts),
+            Spec = child_spec(Ref, [NbAcceptors, Transport, TransOpts,
+                                    Protocol, ProtoOpts, ListenerOpts]),
+
+            case supervisor:start_child(barrel_sup, Spec) of
+                {ok, Pid} when Socket /= undefined ->
+                    %% pass the control of the socket to the listener.
+                    Transport:controlling_process(Socket, Pid),
+                    {ok, Pid};
+                Else ->
+                    Else
+            end
     end.
 
 %% @doc stop a listener

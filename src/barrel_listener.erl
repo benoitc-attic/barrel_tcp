@@ -100,11 +100,18 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
 
     process_flag(trap_exit, true),
 
-    {ok, Socket} = Transport:listen(TransOpts),
+    %% If we have a socket already listening then use it
+    LSocket = case proplists:get_value(socket, TransOpts) of
+        undefined ->
+            {ok, Socket} = Transport:listen(TransOpts),
+            Socket;
+        Socket ->
+            Socket
+    end,
 
     %% launch acceptors
     Spawn = is_request_spawned(Protocol),
-    Acceptors = [barrel_acceptor:start_link(self(), Transport, Socket,
+    Acceptors = [barrel_acceptor:start_link(self(), Transport, LSocket,
                                             ListenerOpts,
                                             {Protocol, ProtoOpts, Spawn})
                  || _ <- lists:seq(1, NbAcceptors)],
@@ -112,7 +119,7 @@ init([NbAcceptors, Transport, TransOpts, Protocol, ProtoOpts,
     %% Start the connection monitor
     {ok, ConnManager} = barrel_connections:start(),
 
-    {ok, #state{socket = Socket,
+    {ok, #state{socket = LSocket,
                 transport = Transport,
                 transport_opts = TransOpts,
                 acceptors = Acceptors,
