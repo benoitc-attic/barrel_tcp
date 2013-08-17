@@ -3,8 +3,8 @@
 
 {application, barrel,
  [
-  {description, ""},
-  {vsn, "2.0"},
+  {description, "generic TCP acceptor pool"},
+  {vsn, "2.1"},
   {registered, []},
   {applications, [
                   kernel,
