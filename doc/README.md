@@ -4,7 +4,7 @@
 
 Copyright (c) 2013 Benoît Chesneau.
 
-__Version:__ 2.0
+__Version:__ 2.1
 
 
 barrel is a **generic TCP acceptor pool** with low latency in Erlang.
