@@ -7,6 +7,7 @@
 %%%
 -module(barrel_tcp).
 -export([name/0,
+	messages/0,
 	listen/1,listen/2,
 	accept/2,
 	connect/3, connect/4,
@@ -21,6 +22,9 @@
 
 %% @doc Name of this transport, <em>tcp</em>.
 name() -> tcp.
+
+%% @doc Atoms used to identify messages in {active, once | true} mod.
+messages() -> {tcp, tcp_closed, tcp_error}.
 
 %% @doc Listen for connections on the given port number.
 %% @see gen_tcp:listen/2
