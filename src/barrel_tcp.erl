@@ -7,16 +7,17 @@
 %%%
 -module(barrel_tcp).
 -export([name/0,
-         listen/1,listen/2,
-         accept/2,
-         connect/3, connect/4,
-         recv/2, recv/3,
-         send/2,
-         setopts/2,
-         controlling_process/2,
-         peername/1,
-         close/1,
-         sockname/1]).
+	listen/1,listen/2,
+	accept/2,
+	connect/3, connect/4,
+	recv/2, recv/3,
+	send/2,
+	setopts/2,
+	controlling_process/2,
+	peername/1,
+	close/1,
+	sockname/1,
+	sendfile/2]).
 
 %% @doc Name of this transport, <em>tcp</em>.
 name() -> tcp.
@@ -103,3 +104,24 @@ close(Socket) ->
 	-> {ok, {inet:ip_address(), inet:port_number()}} | {error, atom()}.
 sockname(Socket) ->
 	inet:sockname(Socket).
+
+
+%% @doc Send a file on a socket.
+%%
+%% This is the optimal way to send files using TCP. It uses a syscall
+%% which means there is no context switch between opening the file
+%% and writing its contents on the socket.
+%%
+%% @see file:sendfile/2
+-spec sendfile(inet:socket(), file:name())
+	-> {ok, non_neg_integer()} | {error, atom()}.
+sendfile(Socket, Filename) ->
+	try file:sendfile(Filename, Socket) of
+		Result -> Result
+	catch
+		error:{badmatch, {error, enotconn}} ->
+			%% file:sendfile/2 might fail by throwing a {badmatch, {error, enotconn}}
+			%% this is because its internal implementation fails with a badmatch in
+			%% prim_file:sendfile/10 if the socket is not connected.
+			{error, closed}
+	end.

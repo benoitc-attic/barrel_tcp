@@ -7,16 +7,17 @@
 
 -module(barrel_ssl).
 -export([name/0,
-         listen/1, listen/2,
-         accept/2,
-         connect/3, connect/4,
-         recv/3, recv/2,
-         send/2,
-         setopts/2,
-         controlling_process/2,
-         peername/1,
-         close/1,
-         sockname/1]).
+	listen/1, listen/2,
+	accept/2,
+	connect/3, connect/4,
+	recv/3, recv/2,
+	send/2,
+	setopts/2,
+	controlling_process/2,
+	peername/1,
+	close/1,
+	sockname/1,
+	sendfile/2]).
 
 %% @doc Name of this transport, <em>tcp</em>.
 name() -> ssl.
@@ -143,4 +144,32 @@ ssl_accept(Socket, Timeout) ->
 			{ok, Socket};
 		{error, Reason} ->
 			{error, {ssl_accept, Reason}}
+	end.
+
+%% @doc Send a file on a socket.
+%%
+%% Unlike with TCP, no syscall can be used here, so sending files
+%% through SSL will be much slower in comparison.
+%%
+%% @see file:sendfile/2
+-spec sendfile(ssl:sslsocket(), file:name())
+	-> {ok, non_neg_integer()} | {error, atom()}.
+sendfile(Socket, Filepath) ->
+	{ok, IoDevice} = file:open(Filepath, [read, binary, raw]),
+	sendfile(Socket, IoDevice, 0).
+
+-spec sendfile(ssl:sslsocket(), file:io_device(), non_neg_integer())
+	-> {ok, non_neg_integer()} | {error, atom()}.
+sendfile(Socket, IoDevice, Sent) ->
+	case file:read(IoDevice, 16#1FFF) of
+		eof ->
+			ok = file:close(IoDevice),
+			{ok, Sent};
+		{ok, Bin} ->
+			case send(Socket, Bin) of
+				ok ->
+					sendfile(Socket, IoDevice, Sent + byte_size(Bin));
+				{error, Reason} ->
+					{error, Reason}
+			end
 	end.
