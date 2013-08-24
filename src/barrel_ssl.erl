@@ -43,7 +43,7 @@ listen(Port, Opts) ->
                 {nodelay, true}],
 
     % do we have required options
-    true = lists:member(cert, 1, Opts)
+    true = lists:keymember(cert, 1, Opts)
            orelse lists:keymember(certfile, 1, Opts),
 
     Opts1 = barrel_util:filter_props(Opts, [backlog, cacertfile,
@@ -94,7 +94,7 @@ recv(Socket, Length, Timeout) ->
 
 %% @doc Send a packet on a socket.
 %% @see ssl:send/2
--spec send(ssl:sslsocket(), iolist()) -> ok | {error, atom()}.
+-spec send(ssl:sslsocket(), iolist() | binary()) -> ok | {error, atom()}.
 send(Socket, Packet) ->
 	ssl:send(Socket, Packet).
 
@@ -169,7 +169,7 @@ sendfile(Socket, IoDevice, Sent) ->
 		eof ->
 			ok = file:close(IoDevice),
 			{ok, Sent};
-		{ok, Bin} ->
+		{ok, Bin} when is_binary(Bin) ->
 			case send(Socket, Bin) of
 				ok ->
 					sendfile(Socket, IoDevice, Sent + byte_size(Bin));
