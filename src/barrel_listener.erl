@@ -155,7 +155,7 @@ handle_call(start_accepting, From, #state{open_reqs=NbReqs,
                                           max_clients=Max,
                                           sleepers=Sleepers}=State)
        when NbReqs =:= Max ->
-    {no_reply, State#state{sleepers=[From, Sleepers]}};
+    {noreply, State#state{sleepers=[From, Sleepers]}};
 handle_call(start_accepting, _From, State) ->
     {reply, ok, State};
 
@@ -233,7 +233,7 @@ handle_info({'DOWN', _MRef, _, Pid, _},
 
     case lists:keyfind(Pid, 1, Managers) of
         false ->
-            {no_reply, State};
+            {noreply, State};
         _ ->
             {ok, NewConnMgr} = barrel_connections:start(),
             NewManagers = [NewConnMgr | lists:keydelete(Pid, 1, Managers)],
