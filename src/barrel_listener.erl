@@ -155,7 +155,7 @@ handle_call(start_accepting, From, #state{open_reqs=NbReqs,
                                           max_clients=Max,
                                           sleepers=Sleepers}=State)
        when NbReqs =:= Max ->
-    {noreply, State#state{sleepers=[From, Sleepers]}};
+    {noreply, State#state{sleepers=[From | Sleepers]}};
 handle_call(start_accepting, _From, State) ->
     {reply, ok, State};
 
