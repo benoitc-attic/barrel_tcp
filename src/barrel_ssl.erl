@@ -36,7 +36,7 @@ listen(Opts) ->
 listen(Port, Opts) ->
     barrel_util:require([crypto, public_key, ssl]),
     BaseOpts = [binary,
-                {backog, 1024},
+                {backlog, 1024},
                 {active, false},
                 {packet, raw},
                 {reuseaddr, true},
